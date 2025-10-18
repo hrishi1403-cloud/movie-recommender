@@ -1,13 +1,28 @@
 import streamlit as st
-import pandas as pd
 import pickle
 import requests
+import pandas as pd
 import os
 from dotenv import load_dotenv
+import gdown
 
 load_dotenv()
 
 api_key = os.environ.get('api_key')
+
+movie_dict = pickle.load(open('movie_dict.pkl', 'rb'))
+
+movies = pd.DataFrame(movie_dict)
+
+# Download similarity.pkl if it doesn't exist
+if not os.path.exists('similarity.pkl'):
+    st.info("Downloading similarity matrix... (first time only, ~176 MB)")
+    file_id = "1rENQb_PpyxL1ZOO47cdbfIo2tr4SAFd3"
+    gdown.download(f'https://drive.google.com/uc?id={file_id}', 'similarity.pkl', quiet=False)
+    st.success("Download complete!")
+
+# Now load it
+similarity = pickle.load(open('similarity.pkl', 'rb'))
 
 def fetch_poster(movie_id):
     try:
@@ -37,18 +52,12 @@ def recommend(movie):
     recommended_movies = []
     recommended_movies_poster = []
     for i in movies_list:
-        movie_id = i[0]
+        movie_id = movies.iloc[i[0]].id  # Fixed: get actual movie_id from dataframe
         recommended_movies_poster.append(fetch_poster(movie_id))
-        recommended_movies.append(movies.iloc[movie_id].title)
+        recommended_movies.append(movies.iloc[i[0]].title)
 
     return recommended_movies, recommended_movies_poster
 
-
-movie_dict = pickle.load(open('movie_dict.pkl', 'rb'))
-
-movies = pd.DataFrame(movie_dict)
-
-similarity = pickle.load(open('similarity.pkl','rb'))
 
 st.title('Movie Recommendation System')
 
